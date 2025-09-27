@@ -8,32 +8,83 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model user {
+model User {
   id          Int       @id @default(autoincrement())
   name        String
   email       String    @unique
-  collegeName String
   password    String
   image       String    @default("")
-  role        UserRole  @default(ADMIN)
+  mobile      String    
+  location    String?
+  role        UserRole  @default(USER) 
+  dob         DateTime?
+  gender      Gender?
+  bloodGroup  String?
+  fatherName  String?
+  motherName  String?
+  skill       String?
+  bio         String?
+  githubUrl   String?   
+  linkedinUrl String?
+  collegeName String?   
+  isTempPassword Boolean @default(false) 
+  
+  currentAddress    Address?  @relation("CurrentAddress", fields: [currentAddressId], references: [id])
+  currentAddressId  Int?      @unique   
+
+  permanentAddress  Address?  @relation("PermanentAddress", fields: [permanentAddressId], references: [id])
+  permanentAddressId Int?     @unique
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  otps        otp[]     // Relation with otp
+  otps        Otp[]     
+  feeds       Feed[]
+
+  @@map("users")
 }
 
-model otp {
+
+
+model Address {
+  id               Int      @id @default(autoincrement())
+  street           String?  
+  city             String?  
+  state            String?  
+  pincode          String?  
+  country          String?  @default("India")
+
+  currentUser      User?    @relation("CurrentAddress")
+  permanentUser    User?    @relation("PermanentAddress")
+}
+
+model Otp {
   id        Int      @id @default(autoincrement())
   code      String
   userId    Int
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      user     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
+model Feed {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  createdAt DateTime @default(now())
+}
 
 enum UserRole {
   ADMIN
   LEADER
+  CAMPUS_ADMINISTRATOR
   USER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
 }

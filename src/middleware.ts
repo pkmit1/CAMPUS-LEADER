@@ -4,24 +4,37 @@ import { verifyToken } from "@/utils/jwt";
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // 1️⃣ Allow public routes: signin/signup and auth APIs
-  if (
-    path.startsWith("/api/auth")
-  ) {
+  // Allow public routes
+  if (path.startsWith("/api/auth") || path === "/signin" || path === "/signup") {
     return NextResponse.next();
   }
 
-  // 2️⃣ Get token
+  // Get token
   const token = request.cookies.get("token")?.value;
-  // 4️⃣ Verify token
   const decoded = await verifyToken(token || "");
 
-  if (path.startsWith("/dashboard") && !decoded) {
-    // console.log(`⛔ Invalid token for ${path}, redirecting to /signin`);
+  // Block if not logged in
+  if (!decoded) {
     return NextResponse.redirect(new URL("/signin", request.url));
   }
 
-  // 6️⃣ All logged-in users can access dashboard and other protected pages
+  // Restrict /dashboard/*
+  if (path.startsWith("/dashboard/") && !decoded) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+
+
+   if (path.startsWith("/dashboard/leader") && !(decoded.role == "LEADER" || decoded.role == "ADMIN"  ) ){
+    return NextResponse.redirect(new URL("/signin", request.url));
+  }
+
+  // Restrict /api/users → only LEADER can call
+  if (path.startsWith("/api/user")&& !(decoded.role == "LEADER" || decoded.role == "ADMIN"  ) ) {
+    
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   return NextResponse.next();
 }
 

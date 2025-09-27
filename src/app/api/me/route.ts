@@ -20,9 +20,12 @@ export async function GET(request: NextRequest) {
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
     const user = await prisma.user.findUnique({
-      where: { email: decoded.email },
-      select: { id: true, name: true, email: true, collegeName: true, image: true },
-    });
+  where: { email: decoded.email },
+  include: {
+    currentAddress: true,
+    permanentAddress: true
+  }
+});
 
     return NextResponse.json(user);
   } catch (error) {
@@ -41,11 +44,11 @@ export async function PUT(request: NextRequest) {
     if (!decoded) return NextResponse.json({ error: "Invalid token" }, { status: 401 });
 
     const body = await request.json();
-    const { name, email, collegeName, image } = body;
+    const { name, email, collegeName, image,skill,gender,bio,githubUrl,linkedinUrl,bloodGroup,mobile,dob } = body;
 
     const updatedUser = await prisma.user.update({
       where: { email: decoded.email },
-      data: { name, email, collegeName, image },
+      data: { name, email, collegeName, image,skill,gender,bio,bloodGroup,linkedinUrl,githubUrl,mobile,dob },
     });
 
     return NextResponse.json(updatedUser);

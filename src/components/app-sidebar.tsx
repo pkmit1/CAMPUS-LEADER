@@ -10,6 +10,7 @@ import {
   Map,
   PieChart,
   Send,
+  User,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -42,7 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     async function fetchUser() {
       setLoading(true)
       try {
-        const res = await axios.get("/api/auth/me", { withCredentials: true })
+        const res = await axios.get("/api/me", { withCredentials: true })
         setUser(res.data) // ✅ your GET returns { id, name, email, collegeName, image }
       } catch (err) {
         setError("Failed to load user")
@@ -74,8 +75,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
     projects: [
       { name: "Home", url: "/dashboard", icon: Home },
-      { name: "Sales & Marketing", url: "#", icon: PieChart },
-      { name: "Travel", url: "#", icon: Map },
+      { name: "User", url: "/dashboard/leader/users", icon: User },
+      { name: "Travel", url: "/dashboard", icon: Map },
     ],
   }
 

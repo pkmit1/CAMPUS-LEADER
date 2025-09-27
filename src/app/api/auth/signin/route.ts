@@ -3,7 +3,7 @@ import { verify } from "@node-rs/argon2";
 import { prisma } from "@/lib/prisma";
 import { error } from "console";
 import { generateKey } from "crypto";
-import { generateToken } from "../../../../utils/jwt";
+import { generateToken } from "@/utils/jwt";
 
 
 export async function POST(request: Request) {
@@ -27,8 +27,10 @@ export async function POST(request: Request) {
         const token=await generateToken({
             userId: user.id,
             email: user.email,
+            role:user.role
         })
-
+console.log(token)
+console.log("user:",user)
 
         //4 login successfully
         const { password: _password,...safeUser } = user;
@@ -37,13 +39,12 @@ export async function POST(request: Request) {
       { message: "Login successful", user: safeUser },
       { status: 200 }
     );
-
+response.cookies.delete("token");
     response.cookies.set("token", token, {
-      httpOnly: true,
+      httpOnly: process.env.NODE_ENV === "production",
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      
+      maxAge: 7 * 24 * 60 * 60, // 7 days 
     });
 
     return response;

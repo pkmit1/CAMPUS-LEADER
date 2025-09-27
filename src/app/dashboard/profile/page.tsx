@@ -2,40 +2,56 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Mail, Edit2, User, School } from "lucide-react";
+import toast from "react-hot-toast";
+import AvatarSection from "@/components/profile-component/AvatarSection";
+import SocialAccounts from "@/components/profile-component/SocialAccounts";
+import PersonalInfo from "@/components/profile-component/PersonalInfo";
+import AddressInfo from "@/components/profile-component/AddressInfo";
+import SkillsSection from "@/components/profile-component/Skills";
+
+interface Address {
+  street?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+}
 
 interface User {
   id: number;
   name: string;
   email: string;
-  collegeName: string;
+  mobile?: string;
   image?: string;
+  dob?: string;
+  gender?: string;
+  bio?: string;
+  skill?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  currentAddress?: Address;
+  permanentAddress?: Address;
 }
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState("");
+  const [editMode, setEditMode] = useState({
+    personal: false,
+    address: false,
+    skills: false,
+    social: false,
+  });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", collegeName: "" });
 
-  // Fetch user
+  // Fetch user data
   useEffect(() => {
     async function fetchUser() {
       setLoading(true);
       try {
-        const res = await axios.get("/api/auth/me", { withCredentials: true });
+        const res = await axios.get("/api/me", { withCredentials: true });
         setUser(res.data);
-        setForm({
-          name: res.data.name,
-          email: res.data.email,
-          collegeName: res.data.collegeName,
-        });
-      } catch (error) {
-        setError("Failed to fetch user data");
+      } catch (err) {
+        toast.error("Failed to fetch user data");
       } finally {
         setLoading(false);
       }
@@ -43,169 +59,133 @@ export default function Profile() {
     fetchUser();
   }, []);
 
-  // Image change preview
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
-      setPreview(URL.createObjectURL(e.target.files[0]));
-    }
-  };
-
-  // Upload profile image
-  const handleImageUpload = async () => {
-    if (!file) return;
+  const handleSave = async (section: string, data: any) => {
     setLoading(true);
-    const formData = new FormData();
-    formData.append("image", file);
-
     try {
-      const res = await axios.post("/api/auth/me/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-        withCredentials: true,
-      });
-      if (user) setUser({ ...user, image: res.data.imageUrl });
-      setFile(null);
-      setPreview("");
-    } catch (error) {
-      setError("Failed to upload image");
+      let updatedData: any = {};
+
+      switch (section) {
+        case "personal":
+          updatedData = {
+            name: data.name,
+            email: data.email,
+            mobile: data.mobile,
+            dob: data.dob,
+            gender: data.gender,
+            bio: data.bio,
+          };
+          break;
+
+        case "address":
+          updatedData = {
+            currentAddress: data.currentAddress,
+            permanentAddress: data.permanentAddress,
+          };
+          break;
+
+        case "skills":
+          const skillsArray = data.skill
+            .split(/[, ]+/)
+            .map((s: string) => s.trim())
+            .filter((s: string) => s);
+          updatedData = {
+            skill: skillsArray.join(","),
+          };
+          break;
+
+        case "social":
+          updatedData = {
+            githubUrl: data.githubUrl,
+            linkedinUrl: data.linkedinUrl,
+          };
+          break;
+
+        default:
+          updatedData = data;
+      }
+
+      const res = await axios.put("/api/me", updatedData, { withCredentials: true });
+      setUser({ ...user, ...res.data });
+      setEditMode({ ...editMode, [section]: false });
+      toast.success("Profile updated successfully!");
+    } catch (err) {
+      toast.error("Failed to update profile");
     } finally {
       setLoading(false);
     }
   };
 
-  // Save profile
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.put(
-        "/api/auth/me",
-        { ...form, image: user?.image },
-        { withCredentials: true }
-      );
-      setUser(res.data);
-      setEditMode(false);
-    } catch (error) {
-      setError("Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
+  const toggleEditMode = (section: keyof typeof editMode) => {
+    setEditMode({ ...editMode, [section]: !editMode[section] });
   };
 
-  if (loading && !user)
+  if (loading && !user) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        Loading...
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
       </div>
     );
+  }
 
-  if (!user) return <div>No user data found</div>;
-
-  return (
-    <div className="p-8 md:p-12 bg-gray-50 min-h-screen">
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* LEFT PROFILE CARD */}
-        <div className="w-full md:w-1/3 bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center">
-          <div className="relative w-32 h-32">
-            <Avatar className="h-32 w-32">
-              <AvatarImage
-                src={preview || user.image || "/default-avatar.png"}
-                alt="Profile"
-              />
-              <AvatarFallback>CN</AvatarFallback>
-            </Avatar>
-            <label className="absolute bottom-0 right-0 bg-purple-600 text-white p-2 rounded-full cursor-pointer shadow">
-              <input type="file" className="hidden" onChange={handleFileChange} />
-              <Edit2 size={16} />
-            </label>
-          </div>
-
-          {file && (
-            <button
-              onClick={handleImageUpload}
-              className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg"
-              disabled={loading}
-            >
-              {loading ? "Uploading..." : "Save Image"}
-            </button>
-          )}
-
-          <h2 className="mt-4 text-2xl font-bold text-gray-800">{user.name}</h2>
-        </div>
-
-        {/* RIGHT INFO SECTION */}
-        <div className="flex-1 flex flex-col gap-6">
-          <div className="bg-white shadow-lg rounded-2xl p-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-purple-700">
-                Contact & Profile
-              </h3>
-              <button
-                onClick={() => setEditMode(!editMode)}
-                className="text-gray-500 hover:text-purple-600"
-              >
-                <Edit2 size={18} />
-              </button>
-            </div>
-
-            {/* Show Form if Editing */}
-            {editMode ? (
-              <div className="flex flex-col gap-4 mt-4">
-                <input
-                  type="text"
-                  className="border p-2 rounded-lg"
-                  placeholder="Name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-                <input
-                  type="email"
-                  className="border p-2 rounded-lg"
-                  placeholder="Email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-                <input
-                  type="text"
-                  className="border p-2 rounded-lg"
-                  placeholder="College"
-                  value={form.collegeName}
-                  onChange={(e) =>
-                    setForm({ ...form, collegeName: e.target.value })
-                  }
-                />
-                <button
-                  onClick={handleSave}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg"
-                  disabled={loading}
-                >
-                  {loading ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            ) : (
-              // Normal Display
-              <div className="grid md:grid-cols-2 gap-4 mt-4">
-
-                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl">
-                  <User className="text-purple-600" size={20} />
-                  <span>{user.name}</span>
-                </div>
-                
-                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl">
-                  <Mail className="text-purple-600" size={20} />
-                  <span>{user.email}</span>
-                </div>
-                
-                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl">
-                  <School className="text-purple-600" size={20} />
-                  <span>{user.collegeName}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {error && <p className="text-red-500">{error}</p>}
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 text-lg">No user data found</p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            <AvatarSection user={user} onUserUpdate={setUser} />
+            <SocialAccounts
+              user={user}
+              editMode={editMode.social}
+              onEditToggle={() => toggleEditMode("social")}
+              onSave={(data) => handleSave("social", data)}
+            />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="lg:col-span-2 space-y-6">
+            <PersonalInfo
+              user={user}
+              editMode={editMode.personal}
+              onEditToggle={() => toggleEditMode("personal")}
+              onSave={(data) => handleSave("personal", data)}
+            />
+
+            <AddressInfo
+              user={user}
+              editMode={editMode.address}
+              onEditToggle={() => toggleEditMode("address")}
+              onSave={(data) => handleSave("address", data)}
+            />
+
+            <SkillsSection
+              user={user}
+              editMode={editMode.skills}
+              onEditToggle={() => toggleEditMode("skills")}
+              onSave={(data) => handleSave("skills", data)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .input-field {
+          @apply w-full px-4 py-3 border-2 border-black rounded-xl;
+        }
+      `}</style>
     </div>
   );
 }
