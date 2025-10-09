@@ -81,7 +81,7 @@ export default function AvatarSection({ user, onUserUpdate }: AvatarSectionProps
           {user.name}
         </h2>
         <p className="text-gray-600 text-lg mb-4">
-          {user.bio || "BCA Student"}
+          {user.bio}
         </p>
 
         {file && (

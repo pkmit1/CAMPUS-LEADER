@@ -28,6 +28,8 @@ export type User = {
   collegeName: string
   name: string
   email: string
+  skill:string
+  mobile:string
 }
 
 export const columns: ColumnDef<User>[] = [
@@ -88,6 +90,16 @@ export const columns: ColumnDef<User>[] = [
         )}
       </Button>
     ),
+  },
+  {
+    accessorKey: "mobile",
+    header: "Mobile",
+    cell: ({ row }) => <div>{row.getValue("mobile")}</div>,
+  },
+  {
+    accessorKey: "skill",
+    header: "Skill",
+    cell: ({ row }) => <div>{row.getValue("skill")}</div>,
   },
 ]
 

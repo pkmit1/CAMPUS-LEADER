@@ -76,7 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     projects: [
       { name: "Home", url: "/dashboard", icon: Home },
       { name: "User", url: "/dashboard/leader/users", icon: User },
-      { name: "Travel", url: "/dashboard", icon: Map },
+      { name: "Project", url: "/dashboard/leader/project-assigned", icon: Map },
     ],
   }
 

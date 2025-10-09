@@ -25,9 +25,9 @@ export async function middleware(request: NextRequest) {
 
 
 
-   if (path.startsWith("/dashboard/leader") && !(decoded.role == "LEADER" || decoded.role == "ADMIN"  ) ){
-    return NextResponse.redirect(new URL("/signin", request.url));
-  }
+  //  if (path.startsWith("/dashboard/leader") && !(decoded.role == "LEADER" || decoded.role == "ADMIN"  ) ){
+  //   return NextResponse.redirect(new URL("/signin", request.url));
+  // }
 
   // Restrict /api/users → only LEADER can call
   if (path.startsWith("/api/user")&& !(decoded.role == "LEADER" || decoded.role == "ADMIN"  ) ) {

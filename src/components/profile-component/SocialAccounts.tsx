@@ -9,11 +9,18 @@ interface SocialAccountsProps {
     linkedinUrl?: string;
   };
   editMode: boolean;
-  onEditToggle: () => void;
-  onSave: (data: { githubUrl: string; linkedinUrl: string }) => void;
+  readOnly?: boolean; 
+  onEditToggle?: () => void; 
+  onSave?: (data: { githubUrl: string; linkedinUrl: string }) => void; 
 }
 
-export default function SocialAccounts({ user, editMode, onEditToggle, onSave }: SocialAccountsProps) {
+export default function SocialAccounts({
+  user,
+  editMode,
+  readOnly = false,
+  onEditToggle,
+  onSave,
+}: SocialAccountsProps) {
   const [form, setForm] = useState({
     githubUrl: user.githubUrl || "",
     linkedinUrl: user.linkedinUrl || "",
@@ -29,7 +36,7 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
   }, [user, editMode]);
 
   const handleSave = () => {
-    onSave(form);
+    if (onSave) onSave(form);
   };
 
   const handleCancel = () => {
@@ -37,12 +44,11 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
       githubUrl: user.githubUrl || "",
       linkedinUrl: user.linkedinUrl || "",
     });
-    onEditToggle();
+    if (onEditToggle) onEditToggle();
   };
 
   const formatUrl = (url: string) => {
     if (!url) return "";
-    // Remove protocol and www for display
     return url.replace(/^(https?:\/\/)?(www\.)?/, "");
   };
 
@@ -60,30 +66,33 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
               <p className="text-gray-600 text-sm">Your professional social profiles</p>
             </div>
           </div>
-          {editMode ? (
-            <div className="flex gap-4">
-            <Save
-              size={24}
-              className="cursor-pointer text-green-600 hover:text-green-700"
-              onClick={handleSave}
-            />
-            <X
-              size={24}
-              className="cursor-pointer text-red-600 hover:text-red-700"
-              onClick={handleCancel}
-            />
-          </div>
-          ) : (
-           
+
+          {/* 👇 Hide edit controls if readOnly is true */}
+          {!readOnly && (
+            editMode ? (
+              <div className="flex gap-4">
+                <Save
+                  size={24}
+                  className="cursor-pointer text-green-600 hover:text-green-700"
+                  onClick={handleSave}
+                />
+                <X
+                  size={24}
+                  className="cursor-pointer text-red-600 hover:text-red-700"
+                  onClick={handleCancel}
+                />
+              </div>
+            ) : (
               <Edit2 className="cursor-pointer" onClick={onEditToggle} size={16} />
-              
+            )
           )}
         </div>
       </div>
 
       {/* Content Section */}
       <div className="p-6">
-        {editMode ? (
+        {editMode && !readOnly ? (
+          // ✍️ Editable Inputs
           <div className="space-y-4">
             {/* GitHub Input */}
             <div className="bg-gray-50 rounded-lg p-4">
@@ -98,7 +107,9 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
                 <input
                   type="text"
                   value={form.githubUrl.replace(/^(https?:\/\/)?(www\.)?github\.com\//, "")}
-                  onChange={(e) => setForm({ ...form, githubUrl: `https://github.com/${e.target.value}` })}
+                  onChange={(e) =>
+                    setForm({ ...form, githubUrl: `https://github.com/${e.target.value}` })
+                  }
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-gray-500 focus:border-transparent bg-white"
                   placeholder="username"
                 />
@@ -118,37 +129,29 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
                 <input
                   type="text"
                   value={form.linkedinUrl.replace(/^(https?:\/\/)?(www\.)?linkedin\.com\/in\//, "")}
-                  onChange={(e) => setForm({ ...form, linkedinUrl: `https://linkedin.com/in/${e.target.value}` })}
+                  onChange={(e) =>
+                    setForm({ ...form, linkedinUrl: `https://linkedin.com/in/${e.target.value}` })
+                  }
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   placeholder="your-profile"
                 />
               </div>
             </div>
-
-            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-              <p className="text-xs text-blue-600 text-center">
-                💡 Your profiles will be visible to employers and connections
-              </p>
-            </div>
           </div>
         ) : (
+          // 👀 Read-only display
           <div className="space-y-4">
             {/* GitHub Display */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 hover:shadow-md transition-shadow">
+            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center shadow-md">
+                  <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center">
                     <Github size={20} className="text-white" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">GitHub</label>
+                    <label className="text-xs font-medium text-gray-600 uppercase">GitHub</label>
                     {user.githubUrl ? (
-                      <a
-                        href={user.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-bold text-gray-800 hover:text-gray-600 transition-colors block"
-                      >
+                      <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-gray-800 hover:text-gray-600 block">
                         {formatUrl(user.githubUrl)}
                       </a>
                     ) : (
@@ -161,7 +164,7 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
                     href={user.githubUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1 bg-gray-800 text-white text-xs font-medium rounded-lg hover:bg-gray-700 transition-colors"
+                    className="px-3 py-1 bg-gray-800 text-white text-xs font-medium rounded-lg hover:bg-gray-700"
                   >
                     Visit
                   </a>
@@ -170,21 +173,16 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
             </div>
 
             {/* LinkedIn Display */}
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 hover:shadow-md transition-shadow">
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
                     <Linkedin size={20} className="text-white" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-600 uppercase tracking-wide">LinkedIn</label>
+                    <label className="text-xs font-medium text-gray-600 uppercase">LinkedIn</label>
                     {user.linkedinUrl ? (
-                      <a
-                        href={user.linkedinUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-bold text-gray-800 hover:text-gray-600 transition-colors block"
-                      >
+                      <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-gray-800 hover:text-gray-600 block">
                         {formatUrl(user.linkedinUrl)}
                       </a>
                     ) : (
@@ -197,22 +195,13 @@ export default function SocialAccounts({ user, editMode, onEditToggle, onSave }:
                     href={user.linkedinUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700"
                   >
                     Visit
                   </a>
                 )}
               </div>
             </div>
-
-            {/* Empty State */}
-            {!user.githubUrl && !user.linkedinUrl && (
-              <div className="text-center py-6">
-                <Globe size={48} className="text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No social accounts added yet</p>
-                <p className="text-gray-400 text-xs mt-1">Add your profiles to increase visibility</p>
-              </div>
-            )}
           </div>
         )}
       </div>

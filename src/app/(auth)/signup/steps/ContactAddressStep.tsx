@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback, memo } from "react";
 import { MapPin, Copy, Home, ArrowLeft, ArrowRight } from "lucide-react";
 import { SignUpForm } from "@/app/(auth)/signup/page";
 import AddressFields from "@/components/AddressFields";
@@ -22,52 +22,120 @@ interface ContactAddressStepProps {
   onPrev: () => void;
 }
 
-export default function ContactAddressStep({
+const ContactAddressStep: React.FC<ContactAddressStepProps> = memo(({
   form,
   setForm,
   sameAsCurrent,
   setSameAsCurrent,
   onNext,
   onPrev,
-}: ContactAddressStepProps) {
+}) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const validateAddress = (address: Address, prefix: string) => {
+  const validateAddress = useCallback((address: Address, prefix: string) => {
     const newErrors: Record<string, string> = {};
     if (!address.street.trim()) newErrors[`${prefix}Street`] = "Street address is required";
     if (!address.city.trim()) newErrors[`${prefix}City`] = "City is required";
     if (!address.state.trim()) newErrors[`${prefix}State`] = "State/Province is required";
     if (!address.country.trim()) newErrors[`${prefix}Country`] = "Country is required";
     if (!address.pincode.trim()) newErrors[`${prefix}Pincode`] = "ZIP/Pincode is required";
+    
+    // Additional validation for pincode format (numbers only)
+    if (address.pincode.trim() && !/^\d+$/.test(address.pincode.trim())) {
+      newErrors[`${prefix}Pincode`] = "ZIP/Pincode must contain only numbers";
+    }
+    
     return newErrors;
-  };
+  }, []);
 
-  const validateForm = () => {
+  const validateForm = useCallback(() => {
     let newErrors = validateAddress(form.currentAddress, "current");
 
     if (!sameAsCurrent) {
-      newErrors = { ...newErrors, ...validateAddress(form.permanentAddress, "permanent") };
+      const permanentErrors = validateAddress(form.permanentAddress, "permanent");
+      newErrors = { ...newErrors, ...permanentErrors };
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [form.currentAddress, form.permanentAddress, sameAsCurrent, validateAddress]);
 
-  const handleNext = () => {
-    if (validateForm()) onNext();
-  };
+  const handleNext = useCallback(() => {
+    if (validateForm()) {
+      onNext();
+    }
+  }, [validateForm, onNext]);
 
-  const copyCurrentToPermanent = () => {
-    setForm({ ...form, permanentAddress: { ...form.currentAddress } });
-    setSameAsCurrent(true);
-  };
+  const copyCurrentToPermanent = useCallback(() => {
+    setForm(prev => ({ 
+      ...prev, 
+      permanentAddress: { ...prev.currentAddress } 
+    }));
+  }, [setForm]);
 
-  const handleSameAddressChange = (checked: boolean) => {
+  const handleSameAddressChange = useCallback((checked: boolean) => {
     setSameAsCurrent(checked);
     if (checked) {
-      setForm({ ...form, permanentAddress: { ...form.currentAddress } });
+      setForm(prev => ({ 
+        ...prev, 
+        permanentAddress: { ...prev.currentAddress } 
+      }));
+      // Clear permanent address errors when same as current is checked
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        Object.keys(newErrors).forEach(key => {
+          if (key.startsWith("permanent")) {
+            delete newErrors[key];
+          }
+        });
+        return newErrors;
+      });
     }
-  };
+  }, [setForm, setSameAsCurrent]);
+
+  // Clear error when user starts typing
+  const clearError = useCallback((field: string) => {
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[field];
+      return newErrors;
+    });
+  }, []);
+
+  const handleAddressChange = useCallback((field: string, value: string, addressType: "current" | "permanent") => {
+    setForm(prev => ({
+      ...prev,
+      [`${addressType}Address`]: {
+        ...prev[`${addressType}Address`],
+        [field]: value
+      }
+    }));
+    
+    // Clear error for this specific field
+    clearError(`${addressType}${field.charAt(0).toUpperCase() + field.slice(1)}`);
+    
+    // If sameAsCurrent is enabled and we're updating current address, also update permanent address
+    if (sameAsCurrent && addressType === "current") {
+      setForm(prev => ({
+        ...prev,
+        permanentAddress: {
+          ...prev.permanentAddress,
+          [field]: value
+        }
+      }));
+      // Also clear permanent address errors
+      clearError(`permanent${field.charAt(0).toUpperCase() + field.slice(1)}`);
+    }
+  }, [sameAsCurrent, setForm, clearError]);
+
+  // Create memoized handlers for each address field
+  const handleCurrentAddressChange = useCallback((field: string, value: string) => {
+    handleAddressChange(field, value, "current");
+  }, [handleAddressChange]);
+
+  const handlePermanentAddressChange = useCallback((field: string, value: string) => {
+    handleAddressChange(field, value, "permanent");
+  }, [handleAddressChange]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -96,12 +164,7 @@ export default function ContactAddressStep({
         <div className="p-6">
           <AddressFields
             address={form.currentAddress}
-            onAddressChange={(field, value) =>
-              setForm({
-                ...form,
-                currentAddress: { ...form.currentAddress, [field]: value },
-              })
-            }
+            onAddressChange={handleCurrentAddressChange}
             prefix="current"
             errors={errors}
           />
@@ -119,15 +182,7 @@ export default function ContactAddressStep({
               </h3>
               <p className="text-gray-600 text-sm">Your permanent residential address</p>
             </div>
-            {!sameAsCurrent && (
-              <button
-                onClick={copyCurrentToPermanent}
-                className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                <Copy size={14} />
-                Copy from Current
-              </button>
-            )}
+           
           </div>
         </div>
         <div className="p-6">
@@ -147,12 +202,7 @@ export default function ContactAddressStep({
 
           <AddressFields
             address={form.permanentAddress}
-            onAddressChange={(field, value) =>
-              setForm({
-                ...form,
-                permanentAddress: { ...form.permanentAddress, [field]: value },
-              })
-            }
+            onAddressChange={handlePermanentAddressChange}
             disabled={sameAsCurrent}
             prefix="permanent"
             errors={errors}
@@ -163,6 +213,7 @@ export default function ContactAddressStep({
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6">
         <button
+          type="button"
           onClick={onPrev}
           className="flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all duration-300 shadow-md hover:shadow-lg"
         >
@@ -181,6 +232,7 @@ export default function ContactAddressStep({
         </div>
 
         <button
+          type="button"
           onClick={handleNext}
           className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-medium hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
         >
@@ -190,4 +242,8 @@ export default function ContactAddressStep({
       </div>
     </div>
   );
-}
+});
+
+ContactAddressStep.displayName = 'ContactAddressStep';
+
+export default ContactAddressStep;

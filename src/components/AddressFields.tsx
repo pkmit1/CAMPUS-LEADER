@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { ICountry, IState, ICity } from 'country-state-city';
 import { Country, State, City } from 'country-state-city';
 import { MapPin, Globe, Navigation, Building, Mailbox } from 'lucide-react';
@@ -20,7 +20,7 @@ interface AddressFieldsProps {
   errors?: Record<string, string>;
 }
 
-const AddressFields: React.FC<AddressFieldsProps> = ({
+const AddressFields: React.FC<AddressFieldsProps> = memo(({
   address,
   onAddressChange,
   disabled = false,
@@ -32,38 +32,52 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
   const [cities, setCities] = useState<ICity[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Memoized country data loading
   useEffect(() => {
-    const allCountries = Country.getAllCountries();
-    setCountries(allCountries);
-    setIsInitialized(true);
+    const loadCountries = () => {
+      const allCountries = Country.getAllCountries();
+      setCountries(allCountries);
+      setIsInitialized(true);
+    };
+    
+    loadCountries();
   }, []);
 
+  // Memoized states loading
   useEffect(() => {
     if (isInitialized && address.country) {
       const countryStates = State.getStatesOfCountry(address.country);
       setStates(countryStates);
       setCities([]);
+    } else {
+      setStates([]);
+      setCities([]);
     }
   }, [address.country, isInitialized]);
 
+  // Memoized cities loading
   useEffect(() => {
     if (isInitialized && address.country && address.state) {
       const stateCities = City.getCitiesOfState(address.country, address.state);
       setCities(stateCities);
+    } else if (!address.state) {
+      setCities([]);
     }
   }, [address.country, address.state, isInitialized]);
 
-  const getCountryName = (countryCode: string): string => {
+  // Memoized utility functions
+  const getCountryName = useCallback((countryCode: string): string => {
     const country = countries.find(c => c.isoCode === countryCode);
     return country ? country.name : countryCode;
-  };
+  }, [countries]);
 
-  const getStateName = (stateCode: string): string => {
+  const getStateName = useCallback((stateCode: string): string => {
     const state = states.find(s => s.isoCode === stateCode);
     return state ? state.name : stateCode;
-  };
+  }, [states]);
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  // Memoized change handlers
+  const handleCountryChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCountry = e.target.value;
     onAddressChange('country', newCountry);
     
@@ -71,18 +85,32 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       onAddressChange('state', '');
       onAddressChange('city', '');
     }
-  };
+  }, [address.country, onAddressChange]);
 
-  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleStateChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     const newState = e.target.value;
     onAddressChange('state', newState);
     
     if (newState !== address.state) {
       onAddressChange('city', '');
     }
-  };
+  }, [address.state, onAddressChange]);
 
-  const InputField = ({ 
+  // Memoized field change handlers to prevent unnecessary re-renders
+  const handleStreetChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onAddressChange('street', e.target.value);
+  }, [onAddressChange]);
+
+  const handleCityChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    onAddressChange('city', e.target.value);
+  }, [onAddressChange]);
+
+  const handlePincodeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onAddressChange('pincode', e.target.value);
+  }, [onAddressChange]);
+
+  // Memoized InputField component to prevent re-renders
+  const InputField = useCallback(({ 
     label, 
     value, 
     onChange, 
@@ -125,9 +153,10 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       </div>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
-  );
+  ), [disabled]);
 
-  const SelectField = ({ 
+  // Memoized SelectField component to prevent re-renders
+  const SelectField = useCallback(({ 
     label, 
     value, 
     onChange, 
@@ -175,7 +204,29 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       </div>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
-  );
+  ), [disabled]);
+
+  // Memoized address preview
+  const addressPreview = React.useMemo(() => {
+    if (!address.street && !address.city && !address.state && !address.country) {
+      return null;
+    }
+    
+    return (
+      <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+        <p className="text-sm font-semibold text-blue-800 mb-2">Address Preview:</p>
+        <p className="text-sm text-blue-600">
+          {[
+            address.street,
+            address.city,
+            address.state ? getStateName(address.state) : '',
+            address.pincode,
+            address.country ? getCountryName(address.country) : ''
+          ].filter(Boolean).join(', ')}
+        </p>
+      </div>
+    );
+  }, [address.street, address.city, address.state, address.pincode, address.country, getStateName, getCountryName]);
 
   return (
     <div className="space-y-6">
@@ -183,7 +234,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       <InputField
         label="Street Address"
         value={address.street}
-        onChange={(e) => onAddressChange('street', e.target.value)}
+        onChange={handleStreetChange}
         placeholder="123 Main Street, Apartment 4B"
         error={errors[`${prefix}Street`]}
         icon={MapPin}
@@ -225,7 +276,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
         <SelectField
           label="City"
           value={address.city}
-          onChange={(e) => onAddressChange('city', e.target.value)}
+          onChange={handleCityChange}
           options={cities.map(city => ({
             value: city.name,
             label: city.name
@@ -240,7 +291,7 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
         <InputField
           label="ZIP/Pincode"
           value={address.pincode}
-          onChange={(e) => onAddressChange('pincode', e.target.value)}
+          onChange={handlePincodeChange}
           placeholder="123456"
           error={errors[`${prefix}Pincode`]}
           icon={Mailbox}
@@ -249,22 +300,11 @@ const AddressFields: React.FC<AddressFieldsProps> = ({
       </div>
 
       {/* Address Summary */}
-      {(address.street || address.city || address.state || address.country) && (
-        <div className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-          <p className="text-sm font-semibold text-blue-800 mb-2">Address Preview:</p>
-          <p className="text-sm text-blue-600">
-            {[
-              address.street,
-              address.city,
-              address.state ? getStateName(address.state) : '',
-              address.pincode,
-              address.country ? getCountryName(address.country) : ''
-            ].filter(Boolean).join(', ')}
-          </p>
-        </div>
-      )}
+      {addressPreview}
     </div>
   );
-};
+});
+
+AddressFields.displayName = 'AddressFields';
 
 export default AddressFields;

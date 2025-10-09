@@ -51,17 +51,7 @@ export default function PersonalInfoStep({ form, setForm, onNext }: PersonalInfo
     return maxAgeDate.toISOString().split('T')[0];
   };
 
-  const calculateAge = (dob: string) => {
-    const today = new Date();
-    const birthDate = new Date(dob);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    return age;
-  };
+ 
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -133,11 +123,7 @@ export default function PersonalInfoStep({ form, setForm, onNext }: PersonalInfo
             />
           </div>
           {errors.dob && <p className="mt-1 text-sm text-red-600">{errors.dob}</p>}
-          {form.dob && (
-            <p className="mt-2 text-sm text-blue-600">
-              Age: {calculateAge(form.dob)} years
-            </p>
-          )}
+          
         </div>
 
         <div>

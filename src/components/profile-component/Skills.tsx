@@ -8,11 +8,18 @@ interface SkillsSectionProps {
     skill?: string;
   };
   editMode: boolean;
-  onEditToggle: () => void;
-  onSave: (data: { skill: string }) => void;
+  readOnly?: boolean; // ✅ same as PersonalInfo
+  onEditToggle?: () => void;
+  onSave?: (data: { skill: string }) => void;
 }
 
-export default function Skills({ user, editMode, onEditToggle, onSave }: SkillsSectionProps) {
+export default function Skills({
+  user,
+  editMode,
+  readOnly = false,
+  onEditToggle,
+  onSave,
+}: SkillsSectionProps) {
   const [form, setForm] = useState({
     skill: user.skill || "",
   });
@@ -24,65 +31,78 @@ export default function Skills({ user, editMode, onEditToggle, onSave }: SkillsS
   }, [user, editMode]);
 
   const handleSave = () => {
-    onSave(form);
-    onEditToggle();
+    if (onSave) onSave(form);
+    if (onEditToggle) onEditToggle();
   };
 
   const handleCancel = () => {
     setForm({ skill: user.skill || "" });
-    onEditToggle();
+    if (onEditToggle) onEditToggle();
   };
 
   return (
-    <div className="bg-white bg-gradient-to-br from-blue-50 to-purple-10 rounded-2xl shadow-lg p-6">
-      <div className="flex  justify-between items-center mb-6">
-        <div className="flex   items-center gap-3">
+    <div className="bg-white rounded-2xl shadow-lg p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
             <Award size={30} className="text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-800">Skills & Expertise</h3>
-            <p className="text-gray-600 text-sm">Your professional skills and abilities</p>
+            <h3 className="text-xl font-bold text-gray-800">
+              Skills & Expertise
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Your professional skills and abilities
+            </p>
           </div>
         </div>
-        {editMode ? (
-          <div className="flex gap-8">
-            <Save
-              className="cursor-pointer text-green-600 hover:text-green-700"
-              onClick={handleSave}
-              size={24}
+
+        {/* ✅ Only show edit/save/cancel if NOT readOnly */}
+        {!readOnly &&
+          (editMode ? (
+            <div className="flex gap-4">
+              <Save
+                className="cursor-pointer text-green-600 hover:text-green-700"
+                onClick={handleSave}
+                size={22}
+              />
+              <X
+                className="cursor-pointer text-red-600 hover:text-red-700"
+                onClick={handleCancel}
+                size={22}
+              />
+            </div>
+          ) : (
+            <Edit2
+              className="cursor-pointer text-gray-600 hover:text-purple-600"
+              onClick={onEditToggle}
+              size={18}
             />
-            <X
-              className="cursor-pointer text-red-600 hover:text-red-700"
-              onClick={handleCancel}
-              size={24}
-            />
-          </div>
-        ) : (
-          <Edit2
-            className="cursor-pointer text-gray-600 hover:text-purple-600"
-            onClick={onEditToggle}
-            size={16}
-          />
-        )}
+          ))}
       </div>
 
-      {editMode ? (
+      {/* Content */}
+      {!readOnly && editMode ? (
+        // Edit Mode
         <div>
           <textarea
             value={form.skill}
             onChange={(e) => setForm({ ...form, skill: e.target.value })}
-            placeholder="Enter your skills separated by commas or spaces (e.g., Node, JavaScript, C++)"
+            placeholder="Enter your skills (e.g., Node, React, C++)"
             rows={4}
             className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
-          <p className="text-gray-500 text-sm mt-2">Separate skills with commas or spaces</p>
+          <p className="text-gray-500 text-sm mt-2">
+            Separate skills with commas or spaces
+          </p>
         </div>
       ) : user.skill ? (
+        // Read Mode
         <div className="flex flex-wrap gap-3">
           {user.skill
             .split(/[, ]+/)
-            .filter(skill => skill.trim())
+            .filter((skill) => skill.trim())
             .map((skill, index) => (
               <span
                 key={index}

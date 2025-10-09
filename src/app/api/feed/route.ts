@@ -36,8 +36,7 @@ export async function POST(request: NextRequest) {
     // ✅ Get token from cookies
     const token = request.cookies.get("token")?.value;
     const decoded = await verifyToken(token || "");
-    console.log("🚀 ~ POST ~ decoded:", decoded)
-
+   
     if (!decoded) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -69,3 +68,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+

@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
         email: true,
         collegeName: true,
         role: true,
+        mobile:true,
+        skill:true,
       },
     });
 
