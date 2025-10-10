@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         collegeName: true,
         role: true,
         mobile:true,
-        skill:true,
+        skills:true,
       },
     });
 

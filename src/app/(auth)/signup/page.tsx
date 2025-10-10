@@ -30,7 +30,7 @@ export interface SignUpForm {
   currentAddress: Address;
   permanentAddress: Address;
   bio: string;
-  skill: string;
+  skills: string;
   githubUrl: string;
   linkedinUrl: string;
 }
@@ -53,7 +53,7 @@ export default function SignUp() {
     currentAddress: { street: "", city: "", state: "", pincode: "", country: "IN" },
     permanentAddress: { street: "", city: "", state: "", pincode: "", country: "IN" },
     bio: "",
-    skill: "",
+    skills: "",
     githubUrl: "",
     linkedinUrl: "",
   });

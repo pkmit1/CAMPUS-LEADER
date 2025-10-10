@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         name: true,
         email: true,
         mobile: true,
-        skill: true,
+        skills: true,
         image: true,
         gender:true,
         githubUrl:true,

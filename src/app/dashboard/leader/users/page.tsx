@@ -28,7 +28,7 @@ export type User = {
   collegeName: string
   name: string
   email: string
-  skill:string
+  skills:string
   mobile:string
 }
 
@@ -97,9 +97,9 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => <div>{row.getValue("mobile")}</div>,
   },
   {
-    accessorKey: "skill",
-    header: "Skill",
-    cell: ({ row }) => <div>{row.getValue("skill")}</div>,
+    accessorKey: "skills",
+    header: "Skills",
+    cell: ({ row }) => <div>{row.getValue("skills")}</div>,
   },
 ]
 

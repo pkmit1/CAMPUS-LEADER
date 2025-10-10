@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           data: {
             projectId,
             studentId: Number(decoded.userId),
-            status: "ACCEPTED",
+            status: "PENDING",
             respondedAt: new Date(),
           },
         });
@@ -131,35 +131,38 @@ export async function DELETE(
 
 
 //GET APPLIED STUDENT
-
-
-export async function GET(request: NextRequest, { params }: { params: { id: number } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const token = request.cookies.get("token")?.value;
     const decoded = await verifyToken(token || "");
-
     if (!decoded) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const projectId = Number(params.id);
-
-    // Only allow admins to view applicants
-    if (decoded.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (isNaN(projectId)) {
+      return NextResponse.json({ error: "Invalid project ID" }, { status: 400 });
     }
 
     // Fetch project info
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      select: { title: true },
+      select: { title: true, createdById: true },
     });
 
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
 
-    // Fetch all students who applied for this project
+    // Allow only Admin OR Project Creator
+    if (decoded.role !== "ADMIN" && project.createdById !== decoded.userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // Fetch applicants
     const applicants = await prisma.projectResponse.findMany({
       where: { projectId },
       include: {
@@ -176,9 +179,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: numb
       status: a.status,
     }));
 
-    return NextResponse.json({ projectTitle: project.title, students }, { status: 200 });
+    return NextResponse.json(
+      { projectTitle: project.title, students },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error fetching applicants:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }
+

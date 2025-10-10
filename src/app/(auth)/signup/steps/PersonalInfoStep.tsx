@@ -153,14 +153,14 @@ export default function PersonalInfoStep({ form, setForm, onNext }: PersonalInfo
             className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-500 transition duration-300"
           >
             <option value="">Select Blood Group</option>
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
+            <option value="A_POSITIVE">A+</option>
+            <option value="A_NEGATIVE">A-</option>
+            <option value="B_POSITIVE">B+</option>
+            <option value="B_NEGATIVE">B-</option>
+            <option value="AB_POSITIVE">AB+</option>
+            <option value="AB_NEGATIVE">AB-</option>
+            <option value="O_POSITIVE">O+</option>
+            <option value="O_NEGATIVE">O-</option>
           </select>
           {errors.bloodGroup && <p className="mt-1 text-sm text-red-600">{errors.bloodGroup}</p>}
         </div>

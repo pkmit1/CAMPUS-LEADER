@@ -22,7 +22,7 @@ interface Project {
   requirements?: string;
   createdById: number;
   deadline?: string;
-  status: "PENDING" | "ASSIGNED" | "ACCEPTED" | "REJECTED" | "IGNORE";
+  status: "ACTIVE" | "PENDING_REVIEW"| "IN_PROGRESS" | "ACCEPTED" | "CANCELLED" | "COMPLETED";
   createdAt: string;
   permission: "full" | "readonly";
   applied: "true" | "false";
@@ -59,36 +59,50 @@ export default function ProjectCard({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const getStatusConfig = (status: string) => {
-    const config = {
-      PENDING: { 
-        color: "bg-amber-50 text-amber-700 border-amber-200",
-        icon: Clock,
-        label: "Pending"
-      },
-      ASSIGNED: { 
-        color: "bg-blue-50 text-blue-700 border-blue-200",
-        icon: Users,
-        label: "Assigned"
-      },
-      ACCEPTED: { 
-        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
-        icon: CheckCircle2,
-        label: "Accepted"
-      },
-      REJECTED: { 
-        color: "bg-red-50 text-red-700 border-red-200",
-        icon: XCircle,
-        label: "Rejected"
-      },
-      IGNORE: { 
-        color: "bg-gray-50 text-gray-600 border-gray-200",
-        icon: AlertCircle,
-        label: "Ignored"
-      },
-    };
-    return config[status as keyof typeof config] || config.IGNORE;
+ const getStatusConfig = (status: string) => {
+  const normalized = status?.toUpperCase();
+
+  const config = {
+    ACTIVE: {
+      color: "bg-green-50 text-green-700 border-green-200",
+      icon: CheckCircle2,
+      label: "Active",
+    },
+    PENDING_REVIEW: {
+      color: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: Clock,
+      label: "Pending Review",
+    },
+    IN_PROGRESS: {
+      color: "bg-blue-50 text-blue-700 border-blue-200",
+      icon: Users,
+      label: "In Progress",
+    },
+    ACCEPTED: {
+      color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      icon: CheckCircle2,
+      label: "Accepted",
+    },
+    CANCELLED: {
+      color: "bg-red-50 text-red-700 border-red-200",
+      icon: XCircle,
+      label: "Cancelled",
+    },
+    COMPLETED: {
+      color: "bg-purple-50 text-purple-700 border-purple-200",
+      icon: CheckCircle2,
+      label: "Completed",
+    },
+    DEFAULT: {
+      color: "bg-gray-50 text-gray-600 border-gray-200",
+      icon: AlertCircle,
+      label: "Unknown",
+    },
   };
+
+  return config[normalized as keyof typeof config] || config.DEFAULT;
+};
+
 
   const getDaysUntilDeadline = (deadline: string) => {
     const today = new Date();
@@ -229,6 +243,10 @@ export default function ProjectCard({
 
       {/* Description with expandable feature */}
       <p className="text-gray-600 text-sm mb-4 flex-1 leading-relaxed">
+        <div className="mb-4 p-3 bg-gray-100 rounded-lg border border-gray-100">
+        <div className="flex items-center gap-2 mb-2">
+        <span className="text-xs font-medium  uppercase tracking-wide">Project Description : </span>
+          </div>
         {visibleText}
         {isLong && (
           <button
@@ -251,6 +269,7 @@ export default function ProjectCard({
             )}
           </button>
         )}
+        </div>
       </p>
 
       {/* Requirements Preview */}
@@ -292,10 +311,10 @@ export default function ProjectCard({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2 mt-2 pt-2">
           {/* View Applicants for Full Permission */}
           {project.permission === "full" && (
-            <button
+            <button 
               onClick={(e) => {
                 e.stopPropagation();
                 onViewApplicants(project.id);
@@ -310,6 +329,7 @@ export default function ProjectCard({
           {/* Student Actions */}
           {project.permission === "readonly" && (
             <>
+            
               
               <button
                 onClick={(e) => {
@@ -330,6 +350,7 @@ export default function ProjectCard({
                   </span>
                 
               </button>
+              
             </>
           )}
         </div>

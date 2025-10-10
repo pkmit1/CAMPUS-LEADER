@@ -35,11 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       data: { status: "ACCEPTED" },
     });
 
-    // ✅ Update project status
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { status: "ASSIGNED" },
-    });
+   
 
     return NextResponse.json({ success: true, assignment });
   } catch (error) {

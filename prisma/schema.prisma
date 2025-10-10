@@ -9,7 +9,7 @@ datasource db {
 }
 
 //
-// ------------------- USER & CORE MODELS -------------------
+// ------------------- USER & PROFILE MODELS -------------------
 //
 
 model User {
@@ -17,39 +17,43 @@ model User {
   name        String
   email       String    @unique
   password    String
-  image       String    @default("")
+  image       String?   @default("default-avatar.png")
   mobile      String
   location    String?
-  role        UserRole  @default(USER) 
+  role        UserRole  @default(STUDENT) 
   dob         DateTime?
   gender      Gender?
   bloodGroup  String?
   fatherName  String?
   motherName  String?
-  skill       String?
+  skills      String[]
   bio         String?
   githubUrl   String?   
   linkedinUrl String?
   collegeName String?   
   isTempPassword Boolean @default(false) 
   
-  currentAddress    Address?  @relation("CurrentAddress", fields: [currentAddressId], references: [id])
-  currentAddressId  Int?      @unique   
+  // Address relations
+  currentAddress    Address?  @relation("UserCurrentAddress", fields: [currentAddressId], references: [id])
+  currentAddressId  Int?     
+  permanentAddress  Address?  @relation("UserPermanentAddress", fields: [permanentAddressId], references: [id])
+  permanentAddressId Int?    
 
-  permanentAddress  Address?  @relation("PermanentAddress", fields: [permanentAddressId], references: [id])
-  permanentAddressId Int?     @unique
-
+  // Timestamps
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  // Relations
   otps        Otp[]     
   feeds       Feed[]
 
-  // 🔥 Project workflow relations
-  projectsCreated     Project[]        @relation("CreatedProjects")
-  projectResponses    ProjectResponse[]
-  assignmentsAsStudent Assignment[]    @relation("StudentAssignments")
-  assignmentsAsAdmin   Assignment[]    @relation("AssignedByAdmin")
+  // Project workflow relations
+  projectsCreated     Project[]        @relation("ProjectCreator")
+  projectResponses    ProjectResponse[] @relation("StudentResponses")
+  
+  // Assignment relations
+  studentAssignments  Assignment[]     @relation("AssignmentStudent")
+  adminAssignments    Assignment[]     @relation("AssignmentAdmin")
 
   @@map("users")
 }
@@ -62,8 +66,11 @@ model Address {
   pincode          String?  
   country          String?  @default("India")
 
-  currentUser      User?    @relation("CurrentAddress")
-  permanentUser    User?    @relation("PermanentAddress")
+  // User relations
+  currentUsers     User[]   @relation("UserCurrentAddress")
+  permanentUsers   User[]   @relation("UserPermanentAddress")
+
+  @@map("addresses")
 }
 
 model Otp {
@@ -72,20 +79,26 @@ model Otp {
   userId    Int
   expiresAt DateTime
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otps")
 }
 
 model Feed {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   title     String
   message   String
   createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("feeds")
 }
 
 //
-// ------------------- PROJECT WORKFLOW -------------------
+// ------------------- PROJECT WORKFLOW MODELS -------------------
 //
 
 model Project {
@@ -93,47 +106,72 @@ model Project {
   title       String
   description String?
   requirements String?
-  createdBy   User      @relation("CreatedProjects", fields: [createdById], references: [id])
+  
+  // Creator info
+  createdBy   User      @relation("ProjectCreator", fields: [createdById], references: [id])
   createdById Int
-  status      ProjectStatus @default(PENDING)
+  
+  // Project metadata
+  status      ProjectStatus @default(DRAFT)
+  priority    ProjectPriority @default(MEDIUM)
   deadline    DateTime?
+  isActive    Boolean   @default(true)
+  
+  // Timestamps
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-  
 
-  // relations
-  responses   ProjectResponse[]
-  assignments Assignment[]
+  // Relations
+  responses    ProjectResponse[]
+  assignments  Assignment[]
+
+  @@map("projects")
 }
 
-model   ProjectResponse {
+model ProjectResponse {
   id         Int           @id @default(autoincrement())
-  project    Project       @relation(fields: [projectId], references: [id])
+  
+  // Project relation
+  project    Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId  Int
-  student    User          @relation(fields: [studentId], references: [id])
+  
+  // Student relation
+  student    User          @relation("StudentResponses", fields: [studentId], references: [id], onDelete: Cascade)
   studentId  Int
-  status     ProjectStatus @default(PENDING)
-  respondedAt DateTime?
+  
+  // Response details
+  status     ResponseStatus @default(PENDING)
+  message    String?       
+  respondedAt DateTime?    
 
   @@unique([projectId, studentId])
+  @@map("project_responses")
 }
 
 model Assignment {
   id           Int      @id @default(autoincrement())
-  project      Project  @relation(fields: [projectId], references: [id])
+  
+  // Project relation
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId    Int
 
-  // Student side
-  student      User     @relation("StudentAssignments", fields: [studentId], references: [id])
+  // Student relation
+  student      User     @relation("AssignmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
   studentId    Int
 
-  // Admin (assignedBy) side
-  assignedBy   User?    @relation("AssignedByAdmin", fields: [assignedById], references: [id])
-  assignedById Int?
+  // Admin who assigned
+  assignedBy   User     @relation("AssignmentAdmin", fields: [assignedById], references: [id], onDelete: Cascade)
+  assignedById Int
 
-  assignedAt   DateTime @default(now())
+  // Assignment details
+  status      AssignmentStatus @default(PENDING)
+  assignedAt  DateTime @default(now())
+  completedAt DateTime?
+  notes       String?   
+  deadline    DateTime?
 
   @@unique([projectId, studentId])
+  @@map("assignments")
 }
 
 //
@@ -141,22 +179,54 @@ model Assignment {
 //
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   LEADER
   CAMPUS_ADMINISTRATOR
-  USER
+  STUDENT
 }
 
 enum Gender {
   MALE
   FEMALE
   OTHER
+  PREFER_NOT_TO_SAY
 }
 
+
+
 enum ProjectStatus {
-  PENDING   // created, waiting for responses
-  ASSIGNED  // admin assigned student(s)
-  ACCEPTED  // student accepted
-  REJECTED  // student rejected
-  IGNORE    // student ignored
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
 }
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ResponseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACTIVE
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  CANCELLED
+  EXTENDED
+}
+
+

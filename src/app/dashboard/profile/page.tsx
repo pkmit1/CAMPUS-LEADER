@@ -26,7 +26,7 @@ interface User {
   dob?: string;
   gender?: string;
   bio?: string;
-  skill?: string;
+  skills?: string[]; // skills as an array of strings
   githubUrl?: string;
   linkedinUrl?: string;
   currentAddress?: Address;
@@ -84,12 +84,9 @@ export default function Profile() {
           break;
 
         case "skills":
-          const skillsArray = data.skill
-            .split(/[, ]+/)
-            .map((s: string) => s.trim())
-            .filter((s: string) => s);
+          // Data is already an array from SkillsSection component
           updatedData = {
-            skill: skillsArray.join(","),
+            skills: data.skills, // Direct array, no string conversion needed
           };
           break;
 
@@ -172,7 +169,7 @@ export default function Profile() {
             />
 
             <SkillsSection
-              user={user}
+              user={user} // Pass entire user object
               editMode={editMode.skills}
               onEditToggle={() => toggleEditMode("skills")}
               onSave={(data) => handleSave("skills", data)}
@@ -180,12 +177,6 @@ export default function Profile() {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .input-field {
-          @apply w-full px-4 py-3 border-2 border-black rounded-xl;
-        }
-      `}</style>
     </div>
   );
 }

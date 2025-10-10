@@ -16,7 +16,7 @@ export default function AdditionalDetailsStep({ form, setForm, onNext, onPrev }:
     const newErrors: Record<string, string> = {};
 
     if (!form.bio.trim()) newErrors.bio = "Bio is required";
-    if (!form.skill.trim()) newErrors.skill = "Skills are required";
+    if (!form.skills.trim()) newErrors.skills = "Skills are required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -57,13 +57,13 @@ export default function AdditionalDetailsStep({ form, setForm, onNext, onPrev }:
             <Code className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              value={form.skill}
-              onChange={(e) => setForm({ ...form, skill: e.target.value })}
+              value={form.skills}
+              onChange={(e) => setForm({ ...form, skills: e.target.value })}
               placeholder="e.g., JavaScript, React, Node.js, Design"
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-blue-500 transition duration-300"
             />
           </div>
-          {errors.skill && <p className="mt-1 text-sm text-red-600">{errors.skill}</p>}
+          {errors.skills && <p className="mt-1 text-sm text-red-600">{errors.skills}</p>}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

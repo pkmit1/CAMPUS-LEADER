@@ -38,8 +38,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
+
 // PUT: update profile fields
-// PUT: update profile fields
+
+
 export async function PUT(request: NextRequest) {
   try {
     const token = request.cookies.get("token")?.value;
@@ -54,7 +56,7 @@ export async function PUT(request: NextRequest) {
       email, 
       collegeName, 
       image, 
-      skill, 
+      skills, // This should be an array of strings
       gender, 
       bio, 
       githubUrl, 
@@ -79,13 +81,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Merge provided data with existing data
+    // Prepare user update data
     const userUpdateData: any = { 
       name: name ?? existingUser.name,
       email: email ?? existingUser.email,
       collegeName: collegeName ?? existingUser.collegeName,
       image: image ?? existingUser.image,
-      skill: skill ?? existingUser.skill,
       gender: gender ?? existingUser.gender,
       bio: bio ?? existingUser.bio,
       githubUrl: githubUrl ?? existingUser.githubUrl,
@@ -95,12 +96,26 @@ export async function PUT(request: NextRequest) {
       dob: dob ? new Date(dob) : existingUser.dob
     };
 
+    // Handle skills - ensure it's always an array
+    if (skills !== undefined) {
+      if (Array.isArray(skills)) {
+        userUpdateData.skills = skills;
+      } else if (typeof skills === 'string') {
+        // If it's a string, split by commas and clean up
+        userUpdateData.skills = skills.split(',')
+          .map((s: string) => s.trim())
+          .filter((s: string) => s.length > 0);
+      } else {
+        userUpdateData.skills = existingUser.skills;
+      }
+    }
+
     // Use transaction for atomic update
     const result = await prisma.$transaction(async (tx) => {
       // Handle current address
       if (currentAddress) {
         if (existingUser.currentAddressId) {
-          // Update existing
+          // Update existing current address
           await tx.address.update({
             where: { id: existingUser.currentAddressId },
             data: {
@@ -112,7 +127,7 @@ export async function PUT(request: NextRequest) {
             }
           });
         } else {
-          // Create new
+          // Create new current address
           const newAddress = await tx.address.create({
             data: {
               street: currentAddress.street || null,
@@ -129,7 +144,7 @@ export async function PUT(request: NextRequest) {
       // Handle permanent address
       if (permanentAddress) {
         if (existingUser.permanentAddressId) {
-          // Update existing
+          // Update existing permanent address
           await tx.address.update({
             where: { id: existingUser.permanentAddressId },
             data: {
@@ -141,7 +156,7 @@ export async function PUT(request: NextRequest) {
             }
           });
         } else {
-          // Create new
+          // Create new permanent address
           const newAddress = await tx.address.create({
             data: {
               street: permanentAddress.street || null,
@@ -175,7 +190,7 @@ export async function PUT(request: NextRequest) {
       email: result.email,
       collegeName: result.collegeName,
       image: result.image,
-      skill: result.skill,
+      skills: result.skills, // This will be an array
       gender: result.gender,
       bio: result.bio,
       githubUrl: result.githubUrl,
@@ -207,6 +222,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
 
 
 // POST: upload image

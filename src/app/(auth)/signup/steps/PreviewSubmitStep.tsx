@@ -150,7 +150,7 @@ export default function PreviewSubmitStep({
               </button>
             </div>
             <PreviewField label="Bio" value={form.bio} icon={<FileText className="w-4 h-4" />} />
-            <PreviewField label="Skills" value={form.skill} icon={<Code className="w-4 h-4" />} />
+            <PreviewField label="Skills" value={form.skills} icon={<Code className="w-4 h-4" />} />
             <PreviewField label="GitHub" value={form.githubUrl} icon={<Github className="w-4 h-4" />} />
             <PreviewField label="LinkedIn" value={form.linkedinUrl} icon={<Linkedin className="w-4 h-4" />} />
           </div>
