@@ -348,6 +348,8 @@ export default function ProjectCard({
                     <Sparkles size={16} />
                     Accept
                   </span>
+
+                  
                 
               </button>
               

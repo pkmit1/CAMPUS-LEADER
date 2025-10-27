@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
         role: true,
         mobile:true,
         skills:true,
+        isOnline:true,
       },
     });
 
@@ -31,5 +32,26 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("GET /api/users error:", error);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { userId, isOnline } = await req.json();
+
+    if (typeof userId === "undefined" || typeof isOnline === "undefined") {
+      return NextResponse.json({ error: "Missing userId or isOnline" }, { status: 400 });
+    }
+
+    // Update the user's online status in the database
+    await prisma.user.update({
+      where: { id: Number(userId) },
+      data: { isOnline: Boolean(isOnline) },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error updating online status:", error);
+    return NextResponse.json({ error: "Failed to update online status" }, { status: 500 });
   }
 }

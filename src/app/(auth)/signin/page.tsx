@@ -24,6 +24,7 @@ function SignIn() {
 
       if (response.status === 200) {
         const user = response.data.user;
+        localStorage.setItem("userId", user.id.toString());
 
         toast.success("Login successful!");
         router.push("/dashboard")

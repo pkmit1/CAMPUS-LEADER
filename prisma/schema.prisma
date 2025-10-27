@@ -32,6 +32,8 @@ model User {
   linkedinUrl String?
   collegeName String?   
   isTempPassword Boolean @default(false) 
+
+   isOnline    Boolean   @default(false)
   
   // Address relations
   currentAddress    Address?  @relation("UserCurrentAddress", fields: [currentAddressId], references: [id])

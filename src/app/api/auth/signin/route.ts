@@ -4,15 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { error } from "console";
 import { generateKey } from "crypto";
 import { generateToken } from "@/utils/jwt";
-
+import { CampusLeaderWebSocketServer } from "../../server";
+import { WebSocketServer, WebSocket } from "ws";
+const abc=new CampusLeaderWebSocketServer(3004)
 
 export async function POST(request: Request) {
     try {
+        
         const {email,password}=await request.json();
-
+        
         //1 email is already exist or not
         const user=await prisma.user.findUnique({where:{email}})
-
+        abc.broadcast({
+            message: user,
+            type: "online"
+        })
         if(!user){
             return NextResponse.json({error:"Invalid User Credentials"},{status:404})
         }
@@ -23,15 +29,18 @@ export async function POST(request: Request) {
         if(!passwordValidate){
             return NextResponse.json({error:"Invalid User Credentials"},{status:401})
         }
+
+        await prisma.user.update({ where: { id: user.id }, data: { isOnline: true } });
         //3 create jwt
         const token=await generateToken({
             userId: user.id,
             email: user.email,
             role:user.role
         })
-console.log(token)
-console.log("user:",user)
 
+        
+        
+        
         //4 login successfully
         const { password: _password,...safeUser } = user;
 

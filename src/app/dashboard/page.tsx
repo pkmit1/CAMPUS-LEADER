@@ -1,11 +1,16 @@
-import React from 'react'
+"use client";
 
-import FeedForm from '@/components/FeedForm'
+import React, { useEffect, useState } from 'react';
+import FeedForm from '@/components/dashboard_Component/FeedForm';
+import DashboardCard from '@/components/dashboard_Component/dashboardCard';
 
-export default function page() {
+export default function Page() {
+  
   return (
     <div>
-      <FeedForm/>
+      
+      <DashboardCard />
+      <FeedForm />
     </div>
-  )
+  );
 }

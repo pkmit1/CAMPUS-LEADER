@@ -3,6 +3,7 @@
 import * as React from "react"
 import axios from "axios"
 import {
+  Book,
   BookOpen,
   Command,
   Home,
@@ -29,6 +30,7 @@ import {
 
 // Types
 interface User {
+  id:number,
   name: string
   email: string
   image?: string
@@ -44,6 +46,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       setLoading(true)
       try {
         const res = await axios.get("/api/me", { withCredentials: true })
+        console.log("API /api/me response:", res.data)
         setUser(res.data) // ✅ your GET returns { id, name, email, collegeName, image }
       } catch (err) {
         setError("Failed to load user")
@@ -58,14 +61,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navData = {
     navMain: [
       {
-        title: "Documentation",
+        title: "Opportunitys",
         url: "#",
         icon: BookOpen,
         items: [
-          { title: "Introduction", url: "#" },
-          { title: "Get Started", url: "#" },
-          { title: "Tutorials", url: "#" },
-          { title: "Changelog", url: "#" },
+          { title: "Placment", url: "#" },
+          { title: "Live Project", url: "#" },
+          { title: "Internship", url: "#" },
+         
         ],
       },
     ],
@@ -77,6 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       { name: "Home", url: "/dashboard", icon: Home },
       { name: "User", url: "/dashboard/leader/users", icon: User },
       { name: "Project", url: "/dashboard/leader/project-assigned", icon: Map },
+       { name: "ResumeBuilder", url: "/dashboard/resumeBuilder", icon: Book },
     ],
   }
 
@@ -96,15 +100,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </div>
               </a>
             </SidebarMenuButton>
+        <NavProjects projects={navData.projects} />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-
       <SidebarContent>
-        <NavProjects projects={navData.projects} />
         <NavMain items={navData.navMain} />
         <NavSecondary items={navData.navSecondary} className="mt-auto" />
       </SidebarContent>
+
 
       <SidebarFooter>
         {loading ? (
@@ -114,6 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ) : user ? (
           <NavUser
             user={{
+              id: user.id,
               name: user.name,
               email: user.email,
               avatar: user.image || "",

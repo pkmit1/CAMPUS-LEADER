@@ -28,8 +28,9 @@ export type User = {
   collegeName: string
   name: string
   email: string
-  skills:string
-  mobile:string
+  skills: string
+  mobile: string
+  isOnline: boolean
 }
 
 export const columns: ColumnDef<User>[] = [
@@ -38,7 +39,9 @@ export const columns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
       >
         Name
         {column.getIsSorted() === "asc" ? (
@@ -59,7 +62,9 @@ export const columns: ColumnDef<User>[] = [
     header: ({ column }) => (
       <Button
         variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
       >
         Email
         {column.getIsSorted() === "asc" ? (
@@ -71,24 +76,8 @@ export const columns: ColumnDef<User>[] = [
         )}
       </Button>
     ),
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>,
-  },
-  {
-    accessorKey: "collegeName",
-    header: ({ column }) => (
-      <Button
-        variant="ghost"
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      >
-        College
-        {column.getIsSorted() === "asc" ? (
-          <ArrowUp className="ml-2 h-4 w-4" />
-        ) : column.getIsSorted() === "desc" ? (
-          <ArrowDown className="ml-2 h-4 w-4" />
-        ) : (
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        )}
-      </Button>
+    cell: ({ row }) => (
+      <div className="lowercase">{row.getValue("email")}</div>
     ),
   },
   {
@@ -101,33 +90,50 @@ export const columns: ColumnDef<User>[] = [
     header: "Skills",
     cell: ({ row }) => <div>{row.getValue("skills")}</div>,
   },
+  {
+    accessorKey: "isOnline",
+    header: "Status",
+    cell: ({ row }) => (
+      <span
+        className={`px-2 py-1 rounded text-xs font-semibold ${
+          row.getValue("isOnline")
+            ? "bg-green-100 text-green-700"
+            : "bg-red-100 text-red-700"
+        }`}
+      >
+        {row.getValue("isOnline") ? "Online" : "Offline"}
+      </span>
+    ),
+  },
 ]
 
 export default function DataTableSorting() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = useState<SortingState>([])
   const [loading, setLoading] = useState(false)
-  const [requests, setRequests] = useState<User[]>([])
+  const [users, setUsers] = useState<User[]>([])
 
-  // Fetch API data
+  // Fetch initial users
   useEffect(() => {
-    fetchRequests()
+    fetchUsers()
   }, [])
 
-  const fetchRequests = async () => {
+  const fetchUsers = async () => {
     try {
       setLoading(true)
       const res = await axios.get("/api/user")
-      setRequests(res.data) // expects array of users
+      setUsers(res.data) // expects array of users
     } catch (error) {
-      toast.error("Failed to fetch requests")
+      toast.error("Failed to fetch users")
       console.error(error)
     } finally {
       setLoading(false)
     }
   }
 
+  
+
   const table = useReactTable({
-    data: requests,
+    data: users,
     columns,
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -158,34 +164,42 @@ export default function DataTableSorting() {
             ))}
           </TableHeader>
           <TableBody>
-  {loading ? (
-    <TableRow>
-      <TableCell colSpan={columns.length} className="h-24 text-center">
-        <LoadingUI /> 
-      </TableCell>
-    </TableRow>
-  ) : table.getRowModel().rows?.length ? (
-    table.getRowModel().rows.map((row) => (
-      <TableRow
-        key={row.id}
-        data-state={row.getIsSelected() && "selected"}
-      >
-        {row.getVisibleCells().map((cell) => (
-          <TableCell key={cell.id}>
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-          </TableCell>
-        ))}
-      </TableRow>
-    ))
-  ) : (
-    <TableRow>
-      <TableCell colSpan={columns.length} className="h-24 text-center">
-        No results.
-      </TableCell>
-    </TableRow>
-  )}
-</TableBody>
-
+            {loading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  <LoadingUI />
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
         </Table>
       </div>
     </div>
